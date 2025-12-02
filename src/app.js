@@ -104,8 +104,8 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Static files (public folder is at project root, not in src)
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // View engine for admin panel
 app.set('view engine', 'ejs');
@@ -143,12 +143,17 @@ app.use('/admin', adminPanelRouter);
 // ===========================================
 
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+     res.json({ 
+       status: 'ok', 
+       timestamp: new Date().toISOString(),
+       uptime: process.uptime()
+     });
+   });
+
+// Serve frontend app at root
+app.get('/', (req, res) => {
+     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+   });
 
 app.get('/api', (req, res) => {
   res.json({
