@@ -1,0 +1,69 @@
+<%- include('../partials/layout', { body: `
+    <div class="page-header">
+        <h1>📝 Content Moderation</h1>
+    </div>
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px;">
+            <a href="/admin/posts" class="btn ${filter === 'all' ? 'btn-primary' : 'btn-outline'} btn-sm">All Posts</a>
+            <a href="/admin/posts?filter=flagged" class="btn ${filter === 'flagged' ? 'btn-danger' : 'btn-outline'} btn-sm">🚩 Flagged</a>
+            <a href="/admin/posts?filter=pending" class="btn ${filter === 'pending' ? 'btn-accent' : 'btn-outline'} btn-sm">⏳ Pending</a>
+        </div>
+    </div>
+    
+    ${posts.length === 0 ? `
+        <div class="card">
+            <div style="text-align: center; padding: 40px; color: #718096;">
+                <p style="font-size: 2rem; margin-bottom: 10px;">✨</p>
+                <p>No posts to review</p>
+            </div>
+        </div>
+    ` : `
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Content</th>
+                        <th>Author</th>
+                        <th>Status</th>
+                        <th>Likes</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${posts.map(post => `
+                        <tr>
+                            <td>
+                                <p style="margin: 0;">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                                ${post.flagReason ? `<small class="text-danger">Flag: ${post.flagReason}</small>` : ''}
+                            </td>
+                            <td>
+                                ${post.isAnonymous ? '<span class="text-muted">Anonymous</span>' : (post.user ? post.user.email : 'Unknown')}
+                            </td>
+                            <td>
+                                ${post.isFlagged ? '<span class="badge badge-danger">Flagged</span>' : ''}
+                                ${!post.isApproved ? '<span class="badge badge-warning">Pending</span>' : ''}
+                                ${post.isApproved && !post.isFlagged ? '<span class="badge badge-success">Approved</span>' : ''}
+                            </td>
+                            <td>❤️ ${post.likes}</td>
+                            <td class="text-muted">${new Date(post.createdAt).toLocaleDateString()}</td>
+                            <td>
+                                <div style="display: flex; gap: 5px;">
+                                    <form method="POST" action="/admin/posts/${post.id}/moderate" style="display: inline;">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn btn-outline btn-sm" title="Approve">✅</button>
+                                    </form>
+                                    <form method="POST" action="/admin/posts/${post.id}/moderate" style="display: inline;" onsubmit="return confirm('Delete this post?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Delete">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `}
+` }) %>

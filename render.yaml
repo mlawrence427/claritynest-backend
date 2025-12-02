@@ -1,0 +1,41 @@
+# ===========================================
+# Render.com Deployment Configuration
+# ===========================================
+
+services:
+  # Web Service
+  - type: web
+    name: claritynest-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: claritynest-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  # PostgreSQL Database
+databases:
+  - name: claritynest-db
+    plan: free
+    databaseName: claritynest
+    user: claritynest_user
+    region: oregon

@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClarityNest | Emotions & Money in Sync</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* === THEME & VARIABLES === */
+        :root {
+            --primary: #4A6C6F;
+            --primary-dark: #2C4A4D;
+            --primary-light: #6B8E91;
+            --accent: #D4A373;
+            --bg-body: #F5F7F5;
+            --bg-card: #FFFFFF;
+            --text-main: #2D3748;
+            --text-muted: #718096;
+            --success: #68D391;
+            --danger: #FC8181;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Auth Screen */
+        #auth-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-body);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .auth-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+        }
+        .auth-tabs button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: #f7fafc;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .auth-tabs button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: white;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--primary);
+            min-width: 250px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* App Layout */
+        #app { display: none; width: 100%; height: 100%; }
+        #app.logged-in { display: flex; }
+
+        aside {
+            width: 260px;
+            background-color: var(--bg-card);
+            border-right: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tagline {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        nav button:hover { background-color: #EDF2F7; color: var(--primary); }
+        nav button.active { background-color: var(--primary); color: white; }
+        
+        .admin-link { color: var(--accent) !important; }
+        .admin-link.active { background-color: var(--accent) !important; }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        section { display: none; max-width: 1100px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+        section.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--primary); }
+        h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+        h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-accent { background-color: var(--accent); color: white; }
+        .btn-outline { background-color: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-danger { background-color: #FED7D7; color: #C53030; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid #E2E8F0;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        input:focus, select:focus, textarea:focus { 
+            outline: 2px solid var(--primary-light); 
+            border-color: transparent; 
+        }
+
+        .chart-container { width: 100%; height: 300px; position: relative; }
+        .stat-big { font-size: 2.5rem; font-weight: 700; color: var(--text-main); }
+        .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+        
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #edf2f7;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+        .account-item:hover { background-color: #f8fafc; }
+
+        .mood-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #E6FFFA;
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 2px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .mood-tag.selected { background: var(--primary); color: white; }
+
+        .community-post { border-left: 3px solid var(--accent); padding-left: 1rem; margin-bottom: 1.5rem; }
+        
+        .badge-trend { 
+            font-size: 0.8rem; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            background: #C6F6D5; 
+            color: #22543D; 
+        }
+        .badge-trend.premium { background: #E9D8FD; color: #553C9A; }
+        
+        .modal-overlay {
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); 
+            z-index: 1000;
+            display: none; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: var(--radius); 
+            max-width: 600px; 
+            width: 90%; 
+            max-height: 90vh; 
+            overflow-y: auto;
+        }
+        
+        .tx-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
+        .tx-table th { text-align: left; padding: 8px; color: var(--text-muted); border-bottom: 1px solid #eee; }
+        .tx-table td { padding: 8px; border-bottom: 1px solid #f7fafc; }
+        
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #E2E8F0; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--primary); }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; border: 2px dashed #E2E8F0; border-radius: var(--radius); }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow: auto; }
+            aside { display: none; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            main { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+        <div class="brand" style="margin-bottom: 1rem; font-size: 2rem;">
+            <span style="font-size:2.5rem;">🌿</span> ClarityNest
+        </div>
+        <div class="auth-box">
+            <div class="auth-tabs">
+                <button class="active" id="tab-login">Sign In</button>
+                <button id="tab-register">Create Account</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email Address" required>
+                <input type="password" id="login-pass" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Sign In</button>
+                <p style="margin-top:1rem; font-size:0.85rem;">
+                    <a href="#" id="forgot-password-link" style="color:var(--primary);">Forgot password?</a>
+                </p>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="register-form" style="display:none;">
+                <input type="text" id="register-name" placeholder="Your Name" required>
+                <input type="email" id="register-email" placeholder="Email Address" required>
+                <input type="password" id="register-pass" placeholder="Password (min 8 chars)" required minlength="8">
+                <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+            </form>
+            
+            <!-- Forgot Password Form -->
+            <form id="forgot-form" style="display:none;">
+                <p style="margin-bottom:1rem; color:var(--text-muted);">Enter your email to receive a reset link.</p>
+                <input type="email" id="forgot-email" placeholder="Email Address" required>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Send Reset Link</button>
+                <p style="margin-top:1rem;">
+                    <a href="#" id="back-to-login" style="color:var(--primary);">← Back to login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app">
+        <aside id="sidebar">
+            <div class="brand">
+                <span style="font-size:1.8rem;">🌿</span> ClarityNest
+            </div>
+            <div class="tagline">Your emotions, your money, your future — in sync.</div>
+
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; padding:10px; background:#f7fafc; border-radius:8px;">
+                <div class="user-avatar" id="nav-avatar">U</div>
+                <div style="font-size:0.9rem; overflow:hidden;">
+                    <div style="font-weight:bold;" id="nav-name">User</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;" id="btn-logout">Logout</div>
+                </div>
+            </div>
+
+            <nav id="main-nav">
+                <button data-target="dashboard" class="active nav-btn">📊 Dashboard</button>
+                <button data-target="accounts" class="nav-btn">💳 Accounts</button>
+                <button data-target="emotions" class="nav-btn">😌 Emotional Check-in</button>
+                <button data-target="projections" class="nav-btn">🔮 Future View</button>
+                <button data-target="community" class="nav-btn">🤝 Community</button>
+                <button data-target="settings" class="nav-btn">⚙️ Settings</button>
+                <a href="/admin" id="nav-admin" class="admin-link nav-btn" style="display:none; text-decoration:none;">🛡️ Admin Panel</a>
+            </nav>
+
+            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline" style="width:100%;" id="btn-close-menu">Close Menu</button>
+            </div>
+        </aside>
+
+        <main>
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="active">
+                <h1>Welcome Back, <span id="dash-name">User</span></h1>
+                
+                <div class="grid-3">
+                    <div class="card">
+                        <h3>Net Worth</h3>
+                        <div class="stat-big" id="dash-networth">$0</div>
+                        <div class="stat-label">Total across all accounts</div>
+                    </div>
+                    <div class="card">
+                        <h3>Emotional Baseline</h3>
+                        <div class="stat-big" id="dash-mood">--</div>
+                        <div class="stat-label">Last check-in: <span id="dash-last-checkin">Never</span></div>
+                    </div>
+                    <div class="card">
+                        <h3>Accounts</h3>
+                        <div class="stat-big" id="dash-accounts">0</div>
+                        <div class="stat-label">Financial accounts tracked</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Asset Allocation</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-allocation"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Mood vs. Money (Recent)</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-mood-money"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ACCOUNTS -->
+            <section id="accounts">
+                <h1>Your Accounts</h1>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Add New Account</h3>
+                        <form id="form-add-account">
+                            <label>Account Name</label>
+                            <input type="text" id="acc-name" placeholder="e.g. Chase Checking" required>
+                            
+                            <label>Type</label>
+                            <select id="acc-type">
+                                <option value="Cash">Cash / Checking</option>
+                                <option value="Savings">High Yield Savings</option>
+                                <option value="Investment">Brokerage / Stocks</option>
+                                <option value="Retirement">401k / IRA</option>
+                                <option value="Crypto">Crypto</option>
+                                <option value="Debt">Credit Card / Loan</option>
+                            </select>
+
+                            <label>Starting Balance ($)</label>
+                            <input type="number" id="acc-balance" step="0.01" placeholder="0.00" required>
+
+                            <button type="submit" class="btn btn-primary">Add Account</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Account List</h3>
+                        <div id="account-list-container">
+                            <div class="empty-state">Loading accounts...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- EMOTIONS -->
+            <section id="emotions">
+                <h1>Emotional Check-in</h1>
+                <p style="margin-bottom: 20px; color: var(--text-muted);">Money is 80% behavior. How are you feeling today?</p>
+                
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Log Your Mood</h3>
+                        <form id="mood-form">
+                            <label>General Sentiment (1 = Panic, 10 = Zen)</label>
+                            <input type="range" id="mood-val" min="1" max="10" value="5">
+                            <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:1rem;" id="mood-disp">5</div>
+
+                            <label>How do you feel?</label>
+                            <div id="mood-tags-container" style="margin-bottom: 1rem;"></div>
+
+                            <label>Journal Note</label>
+                            <textarea id="mood-note" rows="3" placeholder="Why do you feel this way?"></textarea>
+
+                            <button type="submit" class="btn btn-primary">Save Check-in</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Emotional Trends</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-emotions"></canvas>
+                        </div>
+                        <div id="mood-history" style="margin-top:20px; max-height: 200px; overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROJECTIONS -->
+            <section id="projections">
+                <h1>Wealth Projections</h1>
+                <div class="grid-2" style="margin-bottom: 2rem;">
+                    <div class="card">
+                        <h3>Simulation Parameters</h3>
+                        <label>Current Age</label>
+                        <input type="number" id="proj-age" value="30">
+                        <label>Retirement Age</label>
+                        <input type="number" id="proj-retire" value="65">
+                        <label>Monthly Contribution ($)</label>
+                        <input type="number" id="proj-monthly" value="500">
+                        <label>Expected Return (%)</label>
+                        <select id="proj-risk">
+                            <option value="0.04">Conservative (4%)</option>
+                            <option value="0.07" selected>Balanced (7%)</option>
+                            <option value="0.10">Aggressive (10%)</option>
+                        </select>
+                        <button class="btn btn-primary" style="width:100%" id="btn-run-proj">Run Projection</button>
+                    </div>
+                    <div class="card">
+                        <h3>The Big Picture</h3>
+                        <div class="stat-big" id="proj-final-val">$0</div>
+                        <div class="stat-label">Estimated Net Worth at Retirement</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Trajectory</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-projection"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COMMUNITY -->
+            <section id="community">
+                <h1>Community Wins</h1>
+                <div class="grid-2">
+                    <div>
+                        <div class="card">
+                            <h3>Share a Win (Anonymous)</h3>
+                            <textarea id="comm-text" placeholder="I finally paid off my credit card..." rows="3"></textarea>
+                            <button class="btn btn-primary" style="margin-top:10px" id="btn-add-post">Post Anonymously</button>
+                        </div>
+                        <div id="community-feed"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Community Insights</h3>
+                        <div id="community-insights">
+                            <p style="color:var(--text-muted);">Loading insights...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS -->
+            <section id="settings">
+                <h1>Settings & Export</h1>
+                
+                <!-- Premium Subscription Card -->
+                <div class="card" id="subscription-card">
+                    <h3>💎 Premium Subscription</h3>
+                    <div id="subscription-status">
+                        <p style="color: var(--text-muted);">Loading subscription status...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Data Export</h3>
+                    <p>Download your data for backup or analysis.</p>
+                    <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-outline" id="btn-dl-json">Download JSON Backup</button>
+                        <button class="btn btn-outline" id="btn-dl-csv">Download CSV</button>
+                        <button class="btn btn-primary" id="btn-dl-pdf">Download PDF Report</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Import Data</h3>
+                    <p>Restore from a previous backup.</p>
+                    <input type="file" id="import-file" accept=".json" style="margin-top:10px;">
+                    <button class="btn btn-outline" id="btn-import" style="margin-top:10px;">Import Backup</button>
+                </div>
+
+                <div class="card">
+                    <h3>Account</h3>
+                    <button class="btn btn-danger" id="btn-logout-settings">Sign Out</button>
+                </div>
+            </section>
+
+            <!-- PREMIUM UPGRADE MODAL -->
+            <div class="modal-overlay" id="upgrade-modal">
+                <div class="modal">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h2>🌟 Upgrade to Premium</h2>
+                        <button id="btn-close-upgrade-modal" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+                    </div>
+                    
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                        Unlock advanced features to supercharge your financial wellness journey.
+                    </p>
+                    
+                    <div style="display: grid; gap: 15px; margin-bottom: 1.5rem;">
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                            ✅ Unlimited Accounts
+                        </div>
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                            ✅ Advanced Mood Analytics
+                        </div>
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                            ✅ Detailed PDF Reports
+                        </div>
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                            ✅ Priority Support
+                        </div>
+                    </div>
+                    
+                    <div id="plan-options" style="display: grid; gap: 15px;">
+                        <!-- Plans loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ACCOUNT TRANSACTIONS MODAL -->
+    <div class="modal-overlay" id="tx-modal">
+        <div class="modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h2 id="tx-modal-title">Account Details</h2>
+                <button id="btn-close-tx-modal" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div style="background: #f8fafc; padding:1rem; border-radius:8px; margin-bottom:1rem;">
+                <h4>Add Transaction</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:5px;">
+                    <select id="tx-type">
+                        <option value="deposit">Deposit (+)</option>
+                        <option value="withdrawal">Withdrawal (-)</option>
+                        <option value="interest">Interest (+)</option>
+                        <option value="expense">Expense (-)</option>
+                    </select>
+                    <input type="number" id="tx-amount" placeholder="Amount" step="0.01">
+                </div>
+                <input type="text" id="tx-note" placeholder="Note (e.g. Paycheck)" style="margin-top:5px; margin-bottom:5px;">
+                <button class="btn btn-primary btn-sm" id="btn-add-tx">Add Entry</button>
+            </div>
+
+            <h4>History</h4>
+            <div style="max-height: 250px; overflow-y:auto;">
+                <table class="tx-table">
+                    <thead>
+                        <tr><th>Date</th><th>Note</th><th style="text-align:right;">Amount</th></tr>
+                    </thead>
+                    <tbody id="tx-list"></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:1rem; text-align:right;">
+                <button class="btn btn-danger btn-sm" id="btn-delete-acc">Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // API Configuration
+        // ===========================================
+        const API_BASE = window.location.origin + '/api';
+        
+        let currentUser = null;
+        let accessToken = null;
+        let currentAccId = null;
+        let selectedTags = [];
+        let charts = { pie: null, mixed: null, moods: null, proj: null };
+
+        // ===========================================
+        // API Helper
+        // ===========================================
+        async function api(endpoint, options = {}) {
+            const url = API_BASE + endpoint;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (accessToken) {
+                headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+
+            try {
+                showLoading(true);
+                const response = await fetch(url, { ...options, headers });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'API request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ===========================================
+        // UI Helpers
+        // ===========================================
+        function showLoading(show) {
+            document.getElementById('loading-overlay').classList.toggle('show', show);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function nav(sectionId) {
+            document.querySelectorAll('section').forEach(el => el.classList.remove('active'));
+            document.getElementById(sectionId)?.classList.add('active');
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+            document.querySelector(`nav button[data-target="${sectionId}"]`)?.classList.add('active');
+
+            if (sectionId === 'dashboard') loadDashboard();
+            if (sectionId === 'accounts') loadAccounts();
+            if (sectionId === 'emotions') loadEmotions();
+            if (sectionId === 'community') loadCommunity();
+        }
+
+        // ===========================================
+        // Auth Functions
+        // ===========================================
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-pass').value;
+
+            try {
+                const data = await api('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                accessToken = data.accessToken;
+                currentUser = data.user;
+                localStorage.setItem('claritynest_token', accessToken);
+                localStorage.setItem('claritynest_user', JSON.stringify(currentUser));
+                loginSuccess();
+                showToast('Welcome back!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-pass').value;
+
+            try {
+                const data = await api('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                accessToken = data.accessToken;
+                currentUser = data.user;
+                localStorage.setItem('claritynest_token', accessToken);
+                localStorage.setItem('claritynest_user', JSON.stringify(currentUser));
+                loginSuccess();
+                showToast('Account created!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+
+            try {
+                await api('/auth/forgot-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ email })
+                });
+                showToast('Check your email for reset instructions', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('claritynest_token');
+            localStorage.removeItem('claritynest_user');
+            accessToken = null;
+            currentUser = null;
+            document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('app').classList.remove('logged-in');
+            showToast('Logged out', 'info');
+        }
+
+        function loginSuccess() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app').classList.add('logged-in');
+            
+            if (currentUser) {
+                document.getElementById('nav-name').textContent = currentUser.name || currentUser.email.split('@')[0];
+                document.getElementById('nav-avatar').textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
+                document.getElementById('dash-name').textContent = currentUser.name || 'there';
+                
+                if (currentUser.role === 'admin') {
+                    document.getElementById('nav-admin').style.display = 'block';
+                }
+            }
+
+            nav('dashboard');
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('claritynest_token');
+            const user = localStorage.getItem('claritynest_user');
+            
+            if (token && user) {
+                accessToken = token;
+                currentUser = JSON.parse(user);
+                loginSuccess();
+            }
+        }
+
+        // ===========================================
+        // Dashboard
+        // ===========================================
+        async function loadDashboard() {
+            try {
+                const [accountsData, moodsData] = await Promise.all([
+                    api('/accounts'),
+                    api('/moods?limit=10')
+                ]);
+
+                document.getElementById('dash-networth').textContent = '$' + (accountsData.netWorth || 0).toLocaleString();
+                document.getElementById('dash-accounts').textContent = accountsData.count || 0;
+
+                if (moodsData.moods && moodsData.moods.length > 0) {
+                    const lastMood = moodsData.moods[0];
+                    document.getElementById('dash-mood').textContent = lastMood.value + '/10';
+                    document.getElementById('dash-last-checkin').textContent = new Date(lastMood.checkinDate).toLocaleDateString();
+                }
+
+                renderAllocationChart(accountsData.accounts || []);
+                renderMoodMoneyChart(moodsData.moods || []);
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+
+        function renderAllocationChart(accounts) {
+            const ctx = document.getElementById('chart-allocation');
+            if (charts.pie) charts.pie.destroy();
+
+            const types = {};
+            accounts.forEach(a => {
+                if (a.balance > 0) types[a.type] = (types[a.type] || 0) + parseFloat(a.balance);
+            });
+
+            if (Object.keys(types).length === 0) return;
+
+            charts.pie = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(types),
+                    datasets: [{
+                        data: Object.values(types),
+                        backgroundColor: ['#4A6C6F', '#D4A373', '#6B8E91', '#9AE6B4', '#FEB2B2', '#FBD38D'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderMoodMoneyChart(moods) {
+            const ctx = document.getElementById('chart-mood-money');
+            if (charts.mixed) charts.mixed.destroy();
+            if (moods.length === 0) return;
+
+            const recent = moods.slice(0, 10).reverse();
+            charts.mixed = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: recent.map(m => new Date(m.checkinDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                    datasets: [
+                        { label: 'Mood (1-10)', data: recent.map(m => m.value), borderColor: '#D4A373', yAxisID: 'y' },
+                        { label: 'Net Worth', data: recent.map(m => m.netWorthSnapshot || 0), borderColor: '#4A6C6F', yAxisID: 'y1', borderDash: [5, 5] }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { position: 'left', min: 0, max: 10 },
+                        y1: { position: 'right', grid: {drawOnChartArea:false} }
+                    }
+                }
+            });
+        }
+
+        // ===========================================
+        // Accounts
+        // ===========================================
+        async function loadAccounts() {
+            try {
+                const data = await api('/accounts');
+                renderAccounts(data.accounts || []);
+            } catch (error) {
+                console.error('Load accounts error:', error);
+            }
+        }
+
+        function renderAccounts(accounts) {
+            const container = document.getElementById('account-list-container');
+            
+            if (accounts.length === 0) {
+                container.innerHTML = '<div class="empty-state">No accounts added yet.</div>';
+                return;
+            }
+            
+            container.innerHTML = accounts.map(acc => `
+                <div class="account-item" data-id="${acc.id}">
+                    <div>
+                        <strong>${acc.name}</strong>
+                        <span style="font-size:0.8rem; color:#888">(${acc.type})</span>
+                    </div>
+                    <div>
+                        <span style="font-weight:bold; color: ${acc.balance < 0 ? 'red' : 'green'}">
+                            $${parseFloat(acc.balance).toLocaleString()}
+                        </span>
+                        <span style="margin-left:8px; color:#aaa;">›</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addAccount(e) {
+            e.preventDefault();
+            const name = document.getElementById('acc-name').value;
+            const type = document.getElementById('acc-type').value;
+            const balance = parseFloat(document.getElementById('acc-balance').value);
+
+            try {
+                await api('/accounts', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, type, balance })
+                });
+                showToast('Account added!', 'success');
+                e.target.reset();
+                loadAccounts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function openTxModal(id) {
+            currentAccId = id;
+            try {
+                const data = await api(`/accounts/${id}`);
+                document.getElementById('tx-modal-title').textContent = data.account.name;
+                renderTxList(data.account.transactions || []);
+                document.getElementById('tx-modal').classList.add('active');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function renderTxList(transactions) {
+            const tbody = document.getElementById('tx-list');
+            tbody.innerHTML = transactions.sort((a,b) => new Date(b.transactionDate) - new Date(a.transactionDate))
+                .map(tx => `
+                    <tr>
+                        <td>${new Date(tx.transactionDate).toLocaleDateString()}</td>
+                        <td>${tx.note || tx.type}</td>
+                        <td style="text-align:right; color:${tx.amount >= 0 ? 'green':'red'}">
+                            ${tx.amount >= 0 ? '+' : ''}$${Math.abs(tx.amount).toLocaleString()}
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        async function addTransaction() {
+            const type = document.getElementById('tx-type').value;
+            const amount = parseFloat(document.getElementById('tx-amount').value);
+            const note = document.getElementById('tx-note').value;
+            
+            if (!amount || amount <= 0) {
+                showToast('Enter a valid amount', 'error');
+                return;
+            }
+
+            try {
+                const data = await api(`/accounts/${currentAccId}/transactions`, {
+                    method: 'POST',
+                    body: JSON.stringify({ type, amount, note })
+                });
+                showToast('Transaction added!', 'success');
+                document.getElementById('tx-amount').value = '';
+                document.getElementById('tx-note').value = '';
+                
+                const accData = await api(`/accounts/${currentAccId}`);
+                renderTxList(accData.account.transactions || []);
+                loadAccounts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function deleteAccount() {
+            if (!confirm('Delete this account?')) return;
+            
+            try {
+                await api(`/accounts/${currentAccId}`, { method: 'DELETE' });
+                showToast('Account deleted', 'info');
+                document.getElementById('tx-modal').classList.remove('active');
+                loadAccounts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ===========================================
+        // Emotions
+        // ===========================================
+        async function loadEmotions() {
+            try {
+                const [moodsData, tagsData] = await Promise.all([
+                    api('/moods?limit=20'),
+                    api('/moods/tags')
+                ]);
+
+                renderMoodTags(tagsData.tags || []);
+                renderMoodChart(moodsData.moods || []);
+                renderMoodHistory(moodsData.moods || []);
+            } catch (error) {
+                console.error('Load emotions error:', error);
+            }
+        }
+
+        function renderMoodTags(tags) {
+            const container = document.getElementById('mood-tags-container');
+            container.innerHTML = tags.map(tag => 
+                `<span class="mood-tag" data-tag="${tag}">${tag}</span>`
+            ).join('');
+        }
+
+        function renderMoodChart(moods) {
+            const ctx = document.getElementById('chart-emotions');
+            if (charts.moods) charts.moods.destroy();
+            if (moods.length === 0) return;
+
+            const data = moods.slice(0, 15).reverse();
+            charts.moods = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(m => new Date(m.checkinDate).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Mood',
+                        data: data.map(m => m.value),
+                        borderColor: '#4A6C6F',
+                        backgroundColor: 'rgba(74, 108, 111, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 } } }
+            });
+        }
+
+        function renderMoodHistory(moods) {
+            const list = document.getElementById('mood-history');
+            list.innerHTML = moods.slice(0, 10).map(m => `
+                <div style="padding:8px; border-bottom:1px solid #eee;">
+                    <strong>${m.value}/10</strong> - ${(m.tags || []).join(', ') || 'No tags'}
+                    <br><small style="color:#888">${new Date(m.checkinDate).toLocaleString()}</small>
+                </div>
+            `).join('');
+        }
+
+        async function logMood(e) {
+            e.preventDefault();
+            const value = parseInt(document.getElementById('mood-val').value);
+            const note = document.getElementById('mood-note').value;
+
+            try {
+                await api('/moods', {
+                    method: 'POST',
+                    body: JSON.stringify({ value, tags: selectedTags, note })
+                });
+                showToast('Mood logged!', 'success');
+                selectedTags = [];
+                document.querySelectorAll('.mood-tag').forEach(t => t.classList.remove('selected'));
+                e.target.reset();
+                document.getElementById('mood-disp').textContent = '5';
+                loadEmotions();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ===========================================
+        // Projections
+        // ===========================================
+        async function runProjection() {
+            const currentAge = parseInt(document.getElementById('proj-age').value);
+            const retireAge = parseInt(document.getElementById('proj-retire').value);
+            const monthly = parseInt(document.getElementById('proj-monthly').value);
+            const rate = parseFloat(document.getElementById('proj-risk').value);
+
+            try {
+                const accountsData = await api('/accounts');
+                const currentNW = accountsData.netWorth || 0;
+                const yearsToGo = retireAge - currentAge;
+
+                if (yearsToGo <= 0) {
+                    showToast('Retirement age must be greater than current age', 'error');
+                    return;
+                }
+
+                const labels = [];
+                const data = [];
+                let runningBalance = currentNW;
+
+                for (let i = 0; i <= yearsToGo; i++) {
+                    labels.push(currentAge + i);
+                    data.push(runningBalance);
+                    runningBalance = (runningBalance + (monthly * 12)) * (1 + rate);
+                }
+
+                document.getElementById('proj-final-val').textContent = '$' + Math.round(data[data.length-1]).toLocaleString();
+
+                const ctx = document.getElementById('chart-projection');
+                if (charts.proj) charts.proj.destroy();
+
+                charts.proj = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Projected Wealth',
+                            data,
+                            borderColor: '#D4A373',
+                            backgroundColor: 'rgba(212, 163, 115, 0.2)',
+                            fill: true
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ===========================================
+        // Community
+        // ===========================================
+        async function loadCommunity() {
+            try {
+                const [postsData, insightsData] = await Promise.all([
+                    api('/community/posts'),
+                    api('/community/insights')
+                ]);
+
+                renderCommunityFeed(postsData.posts || []);
+                renderCommunityInsights(insightsData.insights || {});
+            } catch (error) {
+                console.error('Load community error:', error);
+            }
+        }
+
+        function renderCommunityFeed(posts) {
+            const container = document.getElementById('community-feed');
+            container.innerHTML = posts.map(p => `
+                <div class="community-post">
+                    <p>${p.content}</p>
+                    <small style="color:#aaa">❤️ ${p.likes} likes</small>
+                </div>
+            `).join('');
+        }
+
+        function renderCommunityInsights(insights) {
+            const container = document.getElementById('community-insights');
+            container.innerHTML = `
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                        🔥 <strong>${insights.postsToday || 0}</strong> posts shared today
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                        ❤️ <strong>${insights.likesToday || 0}</strong> likes given today
+                    </li>
+                    <li style="padding: 10px 0;">
+                        🧘 Top mood: <strong>${insights.topMood || 'Calm'}</strong>
+                    </li>
+                </ul>
+            `;
+        }
+
+        async function addPost() {
+            const content = document.getElementById('comm-text').value;
+            if (!content.trim()) {
+                showToast('Write something to share!', 'error');
+                return;
+            }
+
+            try {
+                await api('/community/posts', {
+                    method: 'POST',
+                    body: JSON.stringify({ content })
+                });
+                showToast('Posted!', 'success');
+                document.getElementById('comm-text').value = '';
+                loadCommunity();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // ===========================================
+        // Exports
+        // ===========================================
+        async function downloadJSON() {
+            try {
+                window.location.href = API_BASE + '/export/json';
+            } catch (error) {
+                showToast('Export failed', 'error');
+            }
+        }
+
+        async function downloadCSV() {
+            try {
+                window.location.href = API_BASE + '/export/csv';
+            } catch (error) {
+                showToast('Export failed', 'error');
+            }
+        }
+
+        async function downloadPDF() {
+            try {
+                window.location.href = API_BASE + '/export/pdf';
+            } catch (error) {
+                showToast('Export failed', 'error');
+            }
+        }
+
+        async function importData() {
+            const fileInput = document.getElementById('import-file');
+            const file = fileInput.files[0];
+            if (!file) {
+                showToast('Select a file first', 'error');
+                return;
+            }
+
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                await api('/export/import', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                
+                showToast('Data imported!', 'success');
+                loadDashboard();
+            } catch (error) {
+                showToast('Import failed: ' + error.message, 'error');
+            }
+        }
+
+        // ===========================================
+        // Event Listeners
+        // ===========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auth tabs
+            document.getElementById('tab-login').addEventListener('click', () => {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-register').classList.remove('active');
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('forgot-form').style.display = 'none';
+            });
+
+            document.getElementById('tab-register').addEventListener('click', () => {
+                document.getElementById('tab-register').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('register-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('forgot-form').style.display = 'none';
+            });
+
+            document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('forgot-form').style.display = 'block';
+            });
+
+            document.getElementById('back-to-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('forgot-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+            });
+
+            // Auth forms
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            document.getElementById('forgot-form').addEventListener('submit', handleForgotPassword);
+            document.getElementById('btn-logout').addEventListener('click', handleLogout);
+            document.getElementById('btn-logout-settings').addEventListener('click', handleLogout);
+
+            // Navigation
+            document.getElementById('main-nav').addEventListener('click', (e) => {
+                if (e.target.classList.contains('nav-btn')) {
+                    nav(e.target.dataset.target);
+                }
+            });
+
+            // Accounts
+            document.getElementById('form-add-account').addEventListener('submit', addAccount);
+            document.getElementById('account-list-container').addEventListener('click', (e) => {
+                const item = e.target.closest('.account-item');
+                if (item) openTxModal(item.dataset.id);
+            });
+
+            // Transaction Modal
+            document.getElementById('btn-close-tx-modal').addEventListener('click', () => {
+                document.getElementById('tx-modal').classList.remove('active');
+            });
+            document.getElementById('btn-add-tx').addEventListener('click', addTransaction);
+            document.getElementById('btn-delete-acc').addEventListener('click', deleteAccount);
+
+            // Moods
+            document.getElementById('mood-form').addEventListener('submit', logMood);
+            document.getElementById('mood-val').addEventListener('input', (e) => {
+                document.getElementById('mood-disp').textContent = e.target.value;
+            });
+            document.getElementById('mood-tags-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('mood-tag')) {
+                    e.target.classList.toggle('selected');
+                    const tag = e.target.dataset.tag;
+                    if (selectedTags.includes(tag)) {
+                        selectedTags = selectedTags.filter(t => t !== tag);
+                    } else {
+                        selectedTags.push(tag);
+                    }
+                }
+            });
+
+            // Projections
+            document.getElementById('btn-run-proj').addEventListener('click', runProjection);
+
+            // Community
+            document.getElementById('btn-add-post').addEventListener('click', addPost);
+
+            // Exports
+            document.getElementById('btn-dl-json').addEventListener('click', downloadJSON);
+            document.getElementById('btn-dl-csv').addEventListener('click', downloadCSV);
+            document.getElementById('btn-dl-pdf').addEventListener('click', downloadPDF);
+            document.getElementById('btn-import').addEventListener('click', importData);
+
+            // Upgrade Modal
+            document.getElementById('btn-close-upgrade-modal')?.addEventListener('click', () => {
+                document.getElementById('upgrade-modal').classList.remove('active');
+            });
+
+            // Check existing auth
+            checkAuth();
+        });
+
+        // ===========================================
+        // Subscription Functions
+        // ===========================================
+        async function loadSubscriptionStatus() {
+            try {
+                const data = await api('/subscription/status');
+                renderSubscriptionStatus(data);
+            } catch (error) {
+                console.error('Subscription status error:', error);
+                renderSubscriptionStatus({ subscription: null, isPremium: false });
+            }
+        }
+
+        function renderSubscriptionStatus(data) {
+            const container = document.getElementById('subscription-status');
+            
+            if (data.isPremium && data.subscription) {
+                const endDate = new Date(data.subscription.currentPeriodEnd).toLocaleDateString();
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <span class="badge-trend premium">Premium Active</span>
+                        <span style="color: var(--text-muted);">Renews ${endDate}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-outline" onclick="openBillingPortal()">Manage Subscription</button>
+                        ${data.subscription.cancelAtPeriodEnd ? 
+                            '<button class="btn btn-primary" onclick="reactivateSubscription()">Reactivate</button>' :
+                            '<button class="btn btn-outline" onclick="cancelSubscription()">Cancel</button>'
+                        }
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <p style="margin-bottom: 15px;">Upgrade to Premium for advanced features.</p>
+                    <button class="btn btn-accent" onclick="showUpgradeModal()">✨ Upgrade to Premium</button>
+                `;
+            }
+        }
+
+        async function showUpgradeModal() {
+            const modal = document.getElementById('upgrade-modal');
+            const plansContainer = document.getElementById('plan-options');
+            
+            try {
+                const data = await api('/subscription/plans');
+                plansContainer.innerHTML = data.plans.map(plan => `
+                    <div style="border: 2px solid ${plan.interval === 'year' ? 'var(--accent)' : '#E2E8F0'}; border-radius: 12px; padding: 20px; text-align: center; position: relative;">
+                        ${plan.interval === 'year' ? '<span style="position: absolute; top: -10px; right: 20px; background: var(--accent); color: white; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem;">BEST VALUE</span>' : ''}
+                        <h3 style="margin-bottom: 10px;">${plan.name}</h3>
+                        <div style="font-size: 2rem; font-weight: bold; color: var(--primary);">${plan.displayPrice}</div>
+                        <button class="btn btn-primary" style="margin-top: 15px; width: 100%;" onclick="startCheckout('${plan.id}')">
+                            Choose ${plan.interval === 'year' ? 'Yearly' : 'Monthly'}
+                        </button>
+                    </div>
+                `).join('');
+                
+                modal.classList.add('active');
+            } catch (error) {
+                showToast('Failed to load plans', 'error');
+            }
+        }
+
+        async function startCheckout(planId) {
+            try {
+                showLoading(true);
+                const data = await api('/subscription/checkout', {
+                    method: 'POST',
+                    body: JSON.stringify({ planId })
+                });
+                
+                // Redirect to Stripe Checkout
+                if (data.url) {
+                    window.location.href = data.url;
+                }
+            } catch (error) {
+                showToast('Failed to start checkout: ' + error.message, 'error');
+            }
+        }
+
+        async function openBillingPortal() {
+            try {
+                const data = await api('/subscription/portal', { method: 'POST' });
+                if (data.url) {
+                    window.location.href = data.url;
+                }
+            } catch (error) {
+                showToast('Failed to open billing portal', 'error');
+            }
+        }
+
+        async function cancelSubscription() {
+            if (!confirm('Are you sure you want to cancel? You will keep access until the end of your billing period.')) {
+                return;
+            }
+            
+            try {
+                await api('/subscription/cancel', { method: 'POST' });
+                showToast('Subscription will cancel at end of billing period', 'info');
+                loadSubscriptionStatus();
+            } catch (error) {
+                showToast('Failed to cancel subscription', 'error');
+            }
+        }
+
+        async function reactivateSubscription() {
+            try {
+                await api('/subscription/reactivate', { method: 'POST' });
+                showToast('Subscription reactivated!', 'success');
+                loadSubscriptionStatus();
+            } catch (error) {
+                showToast('Failed to reactivate subscription', 'error');
+            }
+        }
+
+        // Load subscription status when settings page is viewed
+        const originalNav = nav;
+        nav = function(sectionId) {
+            originalNav(sectionId);
+            if (sectionId === 'settings') {
+                loadSubscriptionStatus();
+            }
+        };
+    </script>
+</body>
+</html>

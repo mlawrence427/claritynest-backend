@@ -1,0 +1,105 @@
+<%- include('../partials/layout', { body: `
+    <div class="page-header">
+        <h1>📊 Dashboard Overview</h1>
+        <span class="text-muted">Last updated: ${new Date().toLocaleString()}</span>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="label">Total Users</div>
+            <div class="value">${stats.totalUsers || 0}</div>
+        </div>
+        <div class="stat-card accent">
+            <div class="label">Premium Users</div>
+            <div class="value">${stats.premiumUsers || 0}</div>
+        </div>
+        <div class="stat-card success">
+            <div class="label">Total Accounts</div>
+            <div class="value">${stats.totalAccounts || 0}</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Avg Mood (30d)</div>
+            <div class="value">${stats.avgMood || 'N/A'}</div>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Users</h3>
+                <a href="/admin/users" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${recentUsers.map(u => `
+                        <tr>
+                            <td>
+                                <a href="/admin/users/${u.id}" style="color: inherit; text-decoration: none;">
+                                    <strong>${u.name || u.email.split('@')[0]}</strong><br>
+                                    <small class="text-muted">${u.email}</small>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge ${u.role === 'admin' ? 'badge-accent' : u.role === 'premium' ? 'badge-primary' : 'badge-success'}">
+                                    ${u.role}
+                                </span>
+                            </td>
+                            <td class="text-muted">${new Date(u.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="/admin/users" class="btn btn-primary">
+                    👥 Manage Users
+                </a>
+                <a href="/admin/posts?filter=flagged" class="btn btn-outline">
+                    🚩 Review Flagged Posts
+                </a>
+                <a href="/api/admin/stats" class="btn btn-outline" target="_blank">
+                    📈 View API Stats
+                </a>
+                <a href="/api/admin/health" class="btn btn-outline" target="_blank">
+                    💚 System Health Check
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">System Status</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div>
+                <strong>Database:</strong>
+                <span style="color: #48BB78;">● Connected</span>
+            </div>
+            <div>
+                <strong>Environment:</strong>
+                <span>${process.env.NODE_ENV || 'development'}</span>
+            </div>
+            <div>
+                <strong>Node Version:</strong>
+                <span>${process.version}</span>
+            </div>
+            <div>
+                <strong>Uptime:</strong>
+                <span>${Math.floor(process.uptime() / 60)} minutes</span>
+            </div>
+        </div>
+    </div>
+` }) %>

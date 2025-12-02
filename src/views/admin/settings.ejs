@@ -1,0 +1,79 @@
+<%- include('../partials/layout', { body: `
+    <div class="page-header">
+        <h1>⚙️ System Settings</h1>
+    </div>
+    
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Environment</h3>
+            </div>
+            <table class="table">
+                <tr>
+                    <td><strong>Node Environment</strong></td>
+                    <td><span class="badge ${env.nodeEnv === 'production' ? 'badge-success' : 'badge-warning'}">${env.nodeEnv || 'development'}</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Database Host</strong></td>
+                    <td>${env.dbHost || 'localhost'}</td>
+                </tr>
+                <tr>
+                    <td><strong>Frontend URL</strong></td>
+                    <td>${env.frontendUrl || 'http://localhost:8080'}</td>
+                </tr>
+                <tr>
+                    <td><strong>Server Uptime</strong></td>
+                    <td>${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m</td>
+                </tr>
+                <tr>
+                    <td><strong>Memory Usage</strong></td>
+                    <td>${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">API Endpoints</h3>
+            </div>
+            <div style="font-family: monospace; font-size: 0.85rem;">
+                <p><strong>Auth:</strong> /api/auth</p>
+                <p><strong>Accounts:</strong> /api/accounts</p>
+                <p><strong>Moods:</strong> /api/moods</p>
+                <p><strong>Community:</strong> /api/community</p>
+                <p><strong>Export:</strong> /api/export</p>
+                <p><strong>Admin API:</strong> /api/admin</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Quick Links</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <a href="/api" class="btn btn-outline" target="_blank">📚 API Documentation</a>
+            <a href="/health" class="btn btn-outline" target="_blank">💚 Health Check</a>
+            <a href="/api/admin/health" class="btn btn-outline" target="_blank">🔧 System Health</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Database Operations</h3>
+        </div>
+        <p class="text-muted" style="margin-bottom: 15px;">
+            These operations should be performed via command line in production.
+        </p>
+        <div style="background: #1a1a2e; color: #00ff88; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.85rem;">
+            <p style="margin: 5px 0;"># Run database migrations</p>
+            <p style="margin: 5px 0; color: #ccc;">npm run db:migrate</p>
+            <br>
+            <p style="margin: 5px 0;"># Seed sample data</p>
+            <p style="margin: 5px 0; color: #ccc;">npm run db:seed</p>
+            <br>
+            <p style="margin: 5px 0;"># Reset database (WARNING: deletes all data)</p>
+            <p style="margin: 5px 0; color: #ccc;">npm run db:reset</p>
+        </div>
+    </div>
+` }) %>

@@ -1,0 +1,70 @@
+<%- include('../partials/layout', { body: `
+    <div class="page-header">
+        <h1>👥 User Management</h1>
+        <span class="text-muted">${pagination.count} total users</span>
+    </div>
+    
+    <div class="card mb-0">
+        <form method="GET" action="/admin/users" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <input type="text" name="search" class="form-control" placeholder="Search by email or name..." value="${filters.search || ''}" style="flex: 1; min-width: 200px;">
+            <select name="role" class="form-control" style="width: auto;">
+                <option value="">All Roles</option>
+                <option value="user" ${filters.role === 'user' ? 'selected' : ''}>User</option>
+                <option value="premium" ${filters.role === 'premium' ? 'selected' : ''}>Premium</option>
+                <option value="admin" ${filters.role === 'admin' ? 'selected' : ''}>Admin</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a href="/admin/users" class="btn btn-outline">Clear</a>
+        </form>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Premium</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${users.map(u => `
+                    <tr>
+                        <td>
+                            <strong>${u.name || 'No name'}</strong><br>
+                            <small class="text-muted">${u.email}</small>
+                        </td>
+                        <td>
+                            <span class="badge ${u.role === 'admin' ? 'badge-accent' : u.role === 'premium' ? 'badge-primary' : 'badge-success'}">
+                                ${u.role}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${u.isActive ? 'badge-success' : 'badge-danger'}">
+                                ${u.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                        <td>
+                            ${u.isPremium ? '<span class="badge badge-accent">Premium</span>' : '-'}
+                        </td>
+                        <td class="text-muted">
+                            ${new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                        <td>
+                            <a href="/admin/users/${u.id}" class="btn btn-outline btn-sm">View</a>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        
+        ${pagination.total > 1 ? `
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                ${pagination.current > 1 ? `<a href="/admin/users?page=${pagination.current - 1}&search=${filters.search || ''}&role=${filters.role || ''}" class="btn btn-outline btn-sm">← Previous</a>` : ''}
+                <span style="padding: 8px 16px; color: #718096;">Page ${pagination.current} of ${pagination.total}</span>
+                ${pagination.current < pagination.total ? `<a href="/admin/users?page=${pagination.current + 1}&search=${filters.search || ''}&role=${filters.role || ''}" class="btn btn-outline btn-sm">Next →</a>` : ''}
+            </div>
+        ` : ''}
+    </div>
+` }) %>
