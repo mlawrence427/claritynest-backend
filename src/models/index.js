@@ -1,38 +1,154 @@
-'use strict';
+// ===========================================
+// Models Index - Initialize all models and associations
+// ===========================================
 
-const fs = require('fs');
-const path = require('path');
-const Sequelize = require('sequelize');
-const basename = path.basename(__filename);
-// THIS IS THE KEY FIX: Import the connection we already fixed!
-const { sequelize } = require('../config/database'); 
-const db = {};
+const { sequelize } = require('../config/database');
+const { DataTypes } = require('sequelize');
 
-// Load all model files in this directory
-fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  })
-  .forEach(file => {
-    // Initialize each model
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    db[model.name] = model;
-  });
+// Import model definitions
+const UserModel = require('./User');
+const AccountModel = require('./Account');
+const TransactionModel = require('./Transaction');
+const MoodModel = require('./Mood');
+const PostModel = require('./Post');
+const BudgetModel = require('./Budget');
 
-// Setup associations (relationships between tables)
-Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
+// Initialize models
+const User = UserModel(sequelize);
+const Account = AccountModel(sequelize);
+const Transaction = TransactionModel(sequelize);
+const Mood = MoodModel(sequelize);
+const Post = PostModel(sequelize);
+const Budget = BudgetModel(sequelize);
+
+// PostLike model (defined in Post.js)
+const PostLike = sequelize.define('PostLike', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  postId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'post_id'
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'user_id'
   }
+}, {
+  tableName: 'post_likes',
+  timestamps: true,
+  indexes: [
+    { unique: true, fields: ['post_id', 'user_id'] }
+  ]
 });
 
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
+// ===========================================
+// Define Associations
+// ===========================================
 
-module.exports = db;
+// User -> Accounts (One to Many)
+User.hasMany(Account, { 
+  foreignKey: 'userId', 
+  as: 'accounts',
+  onDelete: 'CASCADE' 
+});
+Account.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// User -> Transactions (One to Many)
+User.hasMany(Transaction, { 
+  foreignKey: 'userId', 
+  as: 'transactions',
+  onDelete: 'CASCADE' 
+});
+Transaction.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// Account -> Transactions (One to Many)
+Account.hasMany(Transaction, { 
+  foreignKey: 'accountId', 
+  as: 'transactions',
+  onDelete: 'CASCADE' 
+});
+Transaction.belongsTo(Account, { 
+  foreignKey: 'accountId', 
+  as: 'account' 
+});
+
+// User -> Moods (One to Many)
+User.hasMany(Mood, { 
+  foreignKey: 'userId', 
+  as: 'moods',
+  onDelete: 'CASCADE' 
+});
+Mood.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// User -> Posts (One to Many)
+User.hasMany(Post, { 
+  foreignKey: 'userId', 
+  as: 'posts',
+  onDelete: 'CASCADE' 
+});
+Post.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// Post -> PostLikes (One to Many)
+Post.hasMany(PostLike, { 
+  foreignKey: 'postId', 
+  as: 'postLikes',
+  onDelete: 'CASCADE' 
+});
+PostLike.belongsTo(Post, { 
+  foreignKey: 'postId', 
+  as: 'post' 
+});
+
+// User -> PostLikes (One to Many)
+User.hasMany(PostLike, { 
+  foreignKey: 'userId', 
+  as: 'postLikes',
+  onDelete: 'CASCADE' 
+});
+PostLike.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// User -> Budgets (One to Many)
+User.hasMany(Budget, { 
+  foreignKey: 'userId', 
+  as: 'budgets',
+  onDelete: 'CASCADE' 
+});
+Budget.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user' 
+});
+
+// ===========================================
+// Export all models
+// ===========================================
+
+module.exports = {
+  sequelize,
+  User,
+  Account,
+  Transaction,
+  Mood,
+  Post,
+  PostLike,
+  Budget
+};
