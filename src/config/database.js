@@ -5,29 +5,47 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Create Sequelize instance
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'claritynest',
-  process.env.DB_USER || 'postgres',
-  process.env.DB_PASSWORD || 'password',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
+let sequelize;
+
+// CASE 1: PRODUCTION (RAILWAY)
+// If a DATABASE_URL exists, we use it. We also enable SSL which Railway requires.
+if (process.env.DATABASE_URL) {
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
+    logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
     },
     define: {
       timestamps: true,
-      underscored: true, // Use snake_case for auto-generated fields
+      underscored: true,
       freezeTableName: true
     }
-  }
-);
+  });
+} 
+// CASE 2: LOCAL DEV (YOUR COMPUTER)
+// If no DATABASE_URL, we use your local .env variables
+else {
+  sequelize = new Sequelize(
+    process.env.DB_NAME || 'claritynest',
+    process.env.DB_USER || 'postgres',
+    process.env.DB_PASSWORD || 'password',
+    {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      dialect: 'postgres',
+      logging: console.log,
+      define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+      }
+    }
+  );
+}
 
 // Test database connection
 const testConnection = async () => {
