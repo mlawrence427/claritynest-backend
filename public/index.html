@@ -102,6 +102,7 @@
         .toast.show { transform: translateX(0); }
         .toast.success { border-left-color: var(--success); }
         .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--accent); }
 
         /* Loading Overlay */
         .loading-overlay {
@@ -377,6 +378,7 @@
             <nav id="main-nav">
                 <button data-target="dashboard" class="active nav-btn">📊 Dashboard</button>
                 <button data-target="accounts" class="nav-btn">💳 Accounts</button>
+                <button data-target="budgets" class="nav-btn">💰 Budgets</button>
                 <button data-target="emotions" class="nav-btn">😌 Emotional Check-in</button>
                 <button data-target="projections" class="nav-btn">🔮 Future View</button>
                 <button data-target="community" class="nav-btn">🤝 Community</button>
@@ -460,6 +462,81 @@
                         <div id="account-list-container">
                             <div class="empty-state">Loading accounts...</div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BUDGETS -->
+            <section id="budgets">
+                <h1>Budget Tracker</h1>
+                <p style="margin-bottom: 20px; color: var(--text-muted);">Set spending limits and track your progress throughout the month.</p>
+                
+                <!-- Budget Summary -->
+                <div class="grid-3" id="budget-summary">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Budgeted</div>
+                        <div class="stat-value" id="total-budgeted">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Spent</div>
+                        <div class="stat-value" id="total-spent">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Remaining</div>
+                        <div class="stat-value" id="total-remaining">$0</div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top: 20px;">
+                    <!-- Create Budget Form -->
+                    <div class="card">
+                        <h3>Create New Budget</h3>
+                        <div style="margin-top: 15px;">
+                            <label>Category</label>
+                            <select id="budget-category" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:10px;">
+                                <option value="">Select a category...</option>
+                            </select>
+                            
+                            <label>Monthly Limit ($)</label>
+                            <input type="number" id="budget-amount" placeholder="500" min="0" step="0.01" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:10px;">
+                            
+                            <label>Alert at (%)</label>
+                            <input type="number" id="budget-alert" placeholder="80" min="0" max="100" value="80" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:15px;">
+                            
+                            <button class="btn btn-primary" id="btn-create-budget" style="width:100%;">Create Budget</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Expense -->
+                    <div class="card">
+                        <h3>Quick Add Expense</h3>
+                        <div style="margin-top: 15px;">
+                            <label>Category</label>
+                            <select id="expense-category" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:10px;">
+                                <option value="">Select a category...</option>
+                            </select>
+                            
+                            <label>Amount ($)</label>
+                            <input type="number" id="expense-amount" placeholder="25.00" min="0" step="0.01" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:10px;">
+                            
+                            <label>Note (optional)</label>
+                            <input type="text" id="expense-note" placeholder="Coffee and lunch" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-bottom:15px;">
+                            
+                            <button class="btn btn-accent" id="btn-add-expense" style="width:100%;">Add Expense</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget List -->
+                <div class="card" style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Your Budgets</h3>
+                        <button class="btn btn-outline btn-sm" id="btn-refresh-budgets">🔄 Refresh</button>
+                    </div>
+                    <div id="budget-list">
+                        <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                            No budgets yet. Create your first budget above!
+                        </p>
                     </div>
                 </div>
             </section>
@@ -1503,7 +1580,260 @@
             if (sectionId === 'settings') {
                 loadSubscriptionStatus();
             }
+            if (sectionId === 'budgets') {
+                loadBudgets();
+                loadBudgetCategories();
+            }
         };
+
+        // ===========================================
+        // Budget Functions
+        // ===========================================
+        
+        let budgetCategories = [];
+
+        async function loadBudgetCategories() {
+            try {
+                const data = await api('/budgets/categories');
+                budgetCategories = data.categories;
+                
+                // Populate both dropdowns
+                const budgetSelect = document.getElementById('budget-category');
+                const expenseSelect = document.getElementById('expense-category');
+                
+                const options = budgetCategories.map(cat => 
+                    `<option value="${cat.name}" data-icon="${cat.icon}" data-color="${cat.color}">${cat.icon} ${cat.name}</option>`
+                ).join('');
+                
+                budgetSelect.innerHTML = '<option value="">Select a category...</option>' + options;
+                expenseSelect.innerHTML = '<option value="">Select a category...</option>' + options;
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        async function loadBudgets() {
+            try {
+                const data = await api('/budgets');
+                
+                // Update summary
+                document.getElementById('total-budgeted').textContent = formatCurrency(data.summary.totalBudgeted);
+                document.getElementById('total-spent').textContent = formatCurrency(data.summary.totalSpent);
+                document.getElementById('total-remaining').textContent = formatCurrency(data.summary.totalRemaining);
+                
+                // Color the remaining based on status
+                const remainingEl = document.getElementById('total-remaining');
+                if (data.summary.totalRemaining < 0) {
+                    remainingEl.style.color = 'var(--danger)';
+                } else if (data.summary.overallPercentSpent >= 80) {
+                    remainingEl.style.color = 'var(--accent)';
+                } else {
+                    remainingEl.style.color = 'var(--success)';
+                }
+                
+                // Render budget list
+                const listEl = document.getElementById('budget-list');
+                
+                if (data.budgets.length === 0) {
+                    listEl.innerHTML = `
+                        <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                            No budgets yet. Create your first budget above!
+                        </p>
+                    `;
+                    return;
+                }
+                
+                listEl.innerHTML = data.budgets.map(budget => {
+                    const statusColor = getStatusColor(budget.status);
+                    const progressColor = getProgressColor(budget.percentSpent);
+                    
+                    return `
+                        <div class="budget-item" style="padding: 15px; border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid ${budget.color};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.5rem;">${budget.icon}</span>
+                                    <div>
+                                        <strong>${budget.category}</strong>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">${budget.period}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: ${statusColor};">
+                                        ${formatCurrency(budget.spentAmount)} / ${formatCurrency(budget.budgetAmount)}
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                        ${formatCurrency(budget.remainingAmount)} left
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div style="background: #E2E8F0; border-radius: 10px; height: 12px; overflow: hidden;">
+                                <div style="background: ${progressColor}; height: 100%; width: ${Math.min(budget.percentSpent, 100)}%; transition: width 0.3s ease;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>${budget.percentSpent}% used</span>
+                                <button onclick="deleteBudget('${budget.id}')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem;">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Update expense dropdown with active budget categories
+                updateExpenseCategories(data.budgets);
+                
+            } catch (error) {
+                console.error('Failed to load budgets:', error);
+                showToast('Failed to load budgets', 'error');
+            }
+        }
+
+        function updateExpenseCategories(budgets) {
+            const expenseSelect = document.getElementById('expense-category');
+            if (budgets.length > 0) {
+                const options = budgets.map(b => 
+                    `<option value="${b.category}">${b.icon} ${b.category}</option>`
+                ).join('');
+                expenseSelect.innerHTML = '<option value="">Select a category...</option>' + options;
+            }
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'exceeded': return 'var(--danger)';
+                case 'warning': return 'var(--accent)';
+                case 'on-track': return 'var(--primary)';
+                default: return 'var(--success)';
+            }
+        }
+
+        function getProgressColor(percent) {
+            if (percent >= 100) return '#FC8181'; // Red
+            if (percent >= 80) return '#F6AD55';  // Orange
+            if (percent >= 50) return '#68D391';  // Light green
+            return '#48BB78'; // Green
+        }
+
+        async function createBudget() {
+            const category = document.getElementById('budget-category').value;
+            const amount = document.getElementById('budget-amount').value;
+            const alertThreshold = document.getElementById('budget-alert').value || 80;
+            
+            if (!category || !amount) {
+                showToast('Please select a category and enter an amount', 'error');
+                return;
+            }
+            
+            // Get icon and color from selected category
+            const selectedOption = document.getElementById('budget-category').selectedOptions[0];
+            const icon = selectedOption?.dataset?.icon || '📁';
+            const color = selectedOption?.dataset?.color || '#4A6C6F';
+            
+            try {
+                showLoading(true);
+                await api('/budgets', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        category,
+                        budgetAmount: parseFloat(amount),
+                        alertThreshold: parseInt(alertThreshold),
+                        icon,
+                        color
+                    })
+                });
+                
+                showToast('Budget created successfully!', 'success');
+                
+                // Clear form
+                document.getElementById('budget-category').value = '';
+                document.getElementById('budget-amount').value = '';
+                document.getElementById('budget-alert').value = '80';
+                
+                // Reload budgets
+                loadBudgets();
+            } catch (error) {
+                showToast('Failed to create budget: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function addExpenseToBudget() {
+            const category = document.getElementById('expense-category').value;
+            const amount = document.getElementById('expense-amount').value;
+            const note = document.getElementById('expense-note').value;
+            
+            if (!category || !amount) {
+                showToast('Please select a category and enter an amount', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                const data = await api('/budgets/expense', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        category,
+                        amount: parseFloat(amount),
+                        note
+                    })
+                });
+                
+                // Check if alert was triggered
+                if (data.alert) {
+                    if (data.alert.type === 'exceeded') {
+                        showToast(data.alert.message, 'error');
+                    } else {
+                        showToast(data.alert.message, 'warning');
+                    }
+                } else {
+                    showToast('Expense added!', 'success');
+                }
+                
+                // Clear form
+                document.getElementById('expense-amount').value = '';
+                document.getElementById('expense-note').value = '';
+                
+                // Reload budgets
+                loadBudgets();
+            } catch (error) {
+                showToast('Failed to add expense: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deleteBudget(id) {
+            if (!confirm('Are you sure you want to delete this budget?')) {
+                return;
+            }
+            
+            try {
+                await api(`/budgets/${id}`, { method: 'DELETE' });
+                showToast('Budget deleted', 'success');
+                loadBudgets();
+            } catch (error) {
+                showToast('Failed to delete budget', 'error');
+            }
+        }
+
+        async function refreshBudgets() {
+            try {
+                showLoading(true);
+                await api('/budgets/recalculate', { method: 'POST' });
+                await loadBudgets();
+                showToast('Budgets refreshed!', 'success');
+            } catch (error) {
+                showToast('Failed to refresh budgets', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Budget event listeners
+        document.getElementById('btn-create-budget')?.addEventListener('click', createBudget);
+        document.getElementById('btn-add-expense')?.addEventListener('click', addExpenseToBudget);
+        document.getElementById('btn-refresh-budgets')?.addEventListener('click', refreshBudgets);
     </script>
 </body>
 </html>
