@@ -28,6 +28,7 @@ const subscriptionRoutes = require('./routes/subscription');
 const stripeController = require('./controllers/stripeController');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ===========================================
