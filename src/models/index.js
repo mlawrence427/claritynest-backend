@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const basename = path.basename(__filename);
-const { sequelize } = require('../config/database'); // IMPORT OUR FIXED CONNECTION
+// THIS IS THE KEY FIX: Import the connection we already fixed!
+const { sequelize } = require('../config/database'); 
 const db = {};
 
 // Load all model files in this directory
@@ -19,6 +20,7 @@ fs
     );
   })
   .forEach(file => {
+    // Initialize each model
     const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
     db[model.name] = model;
   });
