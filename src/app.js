@@ -25,10 +25,10 @@ const communityRoutes = require('./routes/community');
 const exportRoutes = require('./routes/export');
 const adminRoutes = require('./routes/admin');
 const subscriptionRoutes = require('./routes/subscription');
+const budgetRoutes = require('./routes/budgets');
 const stripeController = require('./controllers/stripeController');
 
 const app = express();
-app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ===========================================
@@ -130,6 +130,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/budgets', budgetRoutes);
 
 // ===========================================
 // ADMIN PANEL ROUTES (Server-rendered)
@@ -143,17 +144,17 @@ app.use('/admin', adminPanelRouter);
 // ===========================================
 
 app.get('/health', (req, res) => {
-     res.json({ 
-       status: 'ok', 
-       timestamp: new Date().toISOString(),
-       uptime: process.uptime()
-     });
-   });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 // Serve frontend app at root
 app.get('/', (req, res) => {
-     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-   });
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
 
 app.get('/api', (req, res) => {
   res.json({
@@ -167,6 +168,7 @@ app.get('/api', (req, res) => {
       community: '/api/community',
       export: '/api/export',
       subscription: '/api/subscription',
+      budgets: '/api/budgets',
       admin: '/api/admin'
     }
   });
